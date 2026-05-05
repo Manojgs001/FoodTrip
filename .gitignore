@@ -1,0 +1,48 @@
+# ── Python ────────────────────────────────
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Django ────────────────────────────────
+*.log
+*.pot
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# ── Environment ───────────────────────────
+.env
+.env.*
+.venv/
+venv/
+env/
+ENV/
+myenv/
+
+# ── Editors ───────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# ── OS ────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Testing ───────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/

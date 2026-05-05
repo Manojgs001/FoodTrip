@@ -1,0 +1,7 @@
+Django>=4.0.0
+razorpay==2.0.1
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
+python-dotenv
