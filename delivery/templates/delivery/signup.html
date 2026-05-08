@@ -1,0 +1,41 @@
+{% extends 'delivery/base.html' %}
+
+{% block content %}
+<div class="auth-container">
+    <h2 class="text-center text-primary" style="margin-bottom: 2rem;">Sign Up</h2>
+    
+    <form action="{% url 'signup' %}" method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Mobile</label>
+            <input type="text" name="mobile" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Address</label>
+            <textarea name="address" class="form-control" rows="3" required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">SIGN UP</button>
+    </form>
+    
+    <p class="text-center text-muted" style="margin-top: 1.5rem;">
+        Already have an account? <a href="{% url 'open_signin' %}" class="text-primary" style="font-weight: 600;">Sign in</a>
+    </p>
+</div>
+{% endblock %}
