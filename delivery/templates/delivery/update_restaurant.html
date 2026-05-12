@@ -1,0 +1,75 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Update {{ restaurant.name }} - Admin{% endblock %}
+
+{% block content %}
+<div class="auth-container" style="max-width: 600px;">
+    <h2 class="text-center text-primary" style="margin-bottom: 2rem;"><i class="fa-solid fa-pen-to-square"></i> Update Restaurant</h2>
+
+    <form action="{% url 'update_restaurant' restaurant.id %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="form-label">Restaurant Name</label>
+            <input type="text" name="name" value="{{ restaurant.name }}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Restaurant Photo</label>
+            <label for="picture" id="drop-zone" style="
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                border: 2px dashed var(--gray-300); border-radius: var(--radius-md);
+                padding: 1rem; cursor: pointer; background: var(--gray-50);
+                transition: border-color 0.2s, background 0.2s; text-align: center;
+            ">
+                <!-- Show existing image if present -->
+                {% if restaurant.picture %}
+                <img id="img-preview" src="{{ restaurant.get_picture_url }}" alt="Current photo"
+                     style="max-height: 180px; border-radius: var(--radius-md); margin-bottom: 0.5rem; object-fit: cover; width: 100%;">
+                <span id="upload-text" class="text-muted" style="font-size: 0.85rem;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Click to change photo
+                </span>
+                {% else %}
+                <img id="img-preview" src="" alt="" style="max-height: 180px; border-radius: var(--radius-md); display: none; margin-bottom: 0.5rem; object-fit: cover; width: 100%;">
+                <i id="upload-icon" class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--gray-400); margin-bottom: 0.5rem;"></i>
+                <span id="upload-text" class="text-muted" style="font-size: 0.9rem;">Click to choose a photo <br><small>JPG, PNG, WEBP supported</small></span>
+                {% endif %}
+                <input type="file" id="picture" name="picture" accept="image/*" style="display:none;" onchange="showPreview(this)">
+            </label>
+            <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.4rem;">
+                <i class="fa-solid fa-circle-info"></i> Leave empty to keep the current photo.
+            </p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Cuisine</label>
+            <input type="text" name="cuisine" value="{{ restaurant.cuisine }}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Rating</label>
+            <input type="number" name="rating" min="0" max="5" step="0.5" value="{{ restaurant.rating }}" class="form-control" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Update Restaurant</button>
+    </form>
+</div>
+
+<script>
+function showPreview(input) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img  = document.getElementById('img-preview');
+        const icon = document.getElementById('upload-icon');
+        const txt  = document.getElementById('upload-text');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        if (icon) icon.style.display = 'none';
+        txt.innerHTML = '<i class="fa-solid fa-check" style="color:green"></i> ' + input.files[0].name;
+        document.getElementById('drop-zone').style.borderColor = 'var(--primary)';
+        document.getElementById('drop-zone').style.background  = 'var(--primary-light, #fff5f2)';
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+</script>
+{% endblock %}

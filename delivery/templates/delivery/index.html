@@ -1,0 +1,91 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}FoodTrip — Where You Find the True Taste{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<div class="hero-wrapper" style="
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 40%, #ff5722 100%);
+    border-radius: var(--radius-lg);
+    padding: 5rem 2rem 4rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 3rem;
+">
+    <!-- Background circles decoration -->
+    <div style="position:absolute;top:-60px;right:-60px;width:250px;height:250px;background:rgba(255,255,255,0.08);border-radius:50%;"></div>
+    <div style="position:absolute;bottom:-80px;left:-40px;width:300px;height:300px;background:rgba(255,255,255,0.06);border-radius:50%;"></div>
+
+    <div style="position: relative; z-index: 1; max-width: 700px; margin: 0 auto;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; animation: bounce 2s infinite;">🍕</div>
+        <h1 style="font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700; color: #fff; margin-bottom: 1rem; line-height: 1.2;">
+            Delicious Food,<br>Delivered Fast.
+        </h1>
+        <p style="font-size: 1.25rem; color: rgba(255,255,255,0.9); margin-bottom: 2.5rem; line-height: 1.7;">
+            Discover top restaurants near you, explore mouth-watering menus,<br>
+            and let our AI find exactly what you're craving. 🤖✨
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'open_signup' %}" class="btn" style="
+                background: #fff; color: #ff5722; font-weight: 700;
+                padding: 1rem 2.5rem; font-size: 1.1rem;
+                border-radius: var(--radius-full);
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                transition: transform 0.2s, box-shadow 0.2s;
+            " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(0,0,0,0.2)'"
+               onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)'">
+                <i class="fa-solid fa-user-plus"></i> Get Started Free
+            </a>
+            <a href="{% url 'open_signin' %}" class="btn" style="
+                background: rgba(255,255,255,0.15); color: #fff; font-weight: 600;
+                padding: 1rem 2.5rem; font-size: 1.1rem;
+                border-radius: var(--radius-full);
+                border: 2px solid rgba(255,255,255,0.5);
+                backdrop-filter: blur(8px);
+                transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+               onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign In
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; max-width: 960px; margin-left: auto; margin-right: auto;">
+
+    <div class="card" style="padding: 2rem; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🏪</div>
+        <h3 style="margin-bottom: 0.5rem;">Top Restaurants</h3>
+        <p class="text-muted" style="font-size: 0.95rem;">Browse curated restaurants with real ratings and menus.</p>
+    </div>
+
+    <div class="card" style="padding: 2rem; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">⚡</div>
+        <h3 style="margin-bottom: 0.5rem;">Fast Ordering</h3>
+        <p class="text-muted" style="font-size: 0.95rem;">Add items to cart and checkout securely in seconds.</p>
+    </div>
+
+    <div class="card" style="padding: 2rem; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
+        <h3 style="margin-bottom: 0.5rem;">AI Crave Detector</h3>
+        <p class="text-muted" style="font-size: 0.95rem;">Tell our AI what you're craving and get perfect dish picks.</p>
+    </div>
+
+    <div class="card" style="padding: 2rem; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔒</div>
+        <h3 style="margin-bottom: 0.5rem;">Secure Payments</h3>
+        <p class="text-muted" style="font-size: 0.95rem;">Pay safely with Razorpay — trusted by millions.</p>
+    </div>
+
+</div>
+
+<style>
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-12px); }
+}
+</style>
+{% endblock %}
