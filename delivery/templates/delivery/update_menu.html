@@ -1,0 +1,350 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Manage Menu - {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="header-section" style="margin-bottom: 2rem;">
+    <h2 class="text-primary">Manage Menu for {{ restaurant.name }}</h2>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+
+    <!-- Add Item Form -->
+    <div class="card" style="padding: 2rem;">
+        <h3 class="text-secondary" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-plus-circle"></i> Add New Menu Item</h3>
+        <form action="{% url 'update_menu' restaurant.id %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="name">Item Name</label>
+                    <input type="text" id="name" name="name" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="price">Price (₹)</label>
+                    <input type="number" id="price" name="price" step="0.01" class="form-control" required>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">
+                    <label class="form-label" for="description">Description</label>
+                    <textarea id="description" name="description" class="form-control" rows="2" required></textarea>
+                </div>
+
+                <!-- Image file upload + Preview -->
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Item Photo</label>
+                    <label for="picture" id="add-drop-zone" style="
+                        display: flex; flex-direction: column; align-items: center; justify-content: center;
+                        border: 2px dashed var(--gray-300); border-radius: var(--radius-md);
+                        padding: 1rem; cursor: pointer; background: var(--gray-50);
+                        transition: border-color 0.2s; text-align: center; height: 100px;
+                    ">
+                        <img id="item-img-preview" src="" alt="" style="max-height: 80px; display: none; border-radius: 6px; object-fit: cover;">
+                        <i id="add-upload-icon" class="fa-solid fa-cloud-arrow-up" style="font-size: 1.5rem; color: var(--gray-400);"></i>
+                        <span id="add-upload-text" class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Upload from computer</span>
+                        <input type="file" id="picture" name="picture" accept="image/*" style="display:none;" onchange="showAddPreview(this)">
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;">
+                        <hr style="flex:1; border-color: var(--gray-200);">
+                        <span class="text-muted" style="font-size: 0.78rem; white-space: nowrap;">OR paste image URL</span>
+                        <hr style="flex:1; border-color: var(--gray-200);">
+                    </div>
+                    <input type="url" id="add-picture-url" name="picture_url" placeholder="https://example.com/image.jpg"
+                        class="form-control" style="font-size: 0.85rem;"
+                        oninput="onAddUrlInput(this)">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="vegeterian" name="vegeterian" style="width: 20px; height: 20px;">
+                    <label class="form-label" for="vegeterian" style="margin-bottom: 0;">Is Vegetarian?</label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem;">Add Item</button>
+        </form>
+    </div>
+
+    <!-- Current Menu Table -->
+    {% if itemList %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Type</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itemList %}
+                <tr id="item-row-{{ item.id }}">
+                    <td><img src="{% if item.picture %}{{ item.get_picture_url }}{% else %}https://placehold.co/60x60/f97316/white?text=🍽{% endif %}" class="table-img"></td>
+                    <td style="font-weight: 600;">{{ item.name }}</td>
+                    <td class="text-muted">{{ item.description }}</td>
+                    <td class="price">₹{{ item.price }}</td>
+                    <td>
+                        {% if item.vegeterian %}
+                            <span class="badge badge-veg">Veg</span>
+                        {% else %}
+                            <span class="badge badge-nonveg">Non-Veg</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center; white-space: nowrap;">
+                        <!-- Edit Button -->
+                        <button
+                            class="btn btn-outline-sm"
+                            style="margin-right: 0.4rem;"
+                            onclick="openEditModal({{ item.id }}, '{{ item.name|escapejs }}', '{{ item.description|escapejs }}', {{ item.price }}, {{ item.vegeterian|yesno:'true,false' }}, '{% if item.picture %}{{ item.picture.url }}{% endif %}')"
+                            title="Edit item">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                        <!-- Delete Button -->
+                        <a href="{% url 'delete_menu_item' item.id %}"
+                           class="btn btn-danger"
+                           style="font-size: 0.8rem; padding: 0.35rem 0.75rem;"
+                           onclick="return confirm('Delete \'{{ item.name|escapejs }}\'? This cannot be undone.')"
+                           title="Delete item">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ===== EDIT ITEM MODAL ===== -->
+<div id="edit-modal-backdrop" style="
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    z-index: 1000; align-items: center; justify-content: center;">
+
+    <div style="
+        background: #fff; border-radius: var(--radius-lg);
+        padding: 2rem; width: 100%; max-width: 580px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+        animation: modalSlideIn 0.25s ease;
+        max-height: 90vh; overflow-y: auto;">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 class="text-primary" style="margin: 0;"><i class="fa-solid fa-pen-to-square"></i> Edit Menu Item</h3>
+            <button onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-500);" title="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="edit-item-form" method="POST" action="">
+            {% csrf_token %}
+            <input type="hidden" name="_method" value="POST">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Item Name</label>
+                    <input type="text" id="edit-name" name="name" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Price (₹)</label>
+                    <input type="number" id="edit-price" name="price" step="0.01" class="form-control" required>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">
+                    <label class="form-label">Description</label>
+                    <textarea id="edit-description" name="description" class="form-control" rows="2" required></textarea>
+                </div>
+
+                <!-- Edit Image upload -->
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Item Photo</label>
+                    <label for="edit-picture" id="edit-drop-zone" style="
+                        display: flex; flex-direction: column; align-items: center; justify-content: center;
+                        border: 2px dashed var(--gray-300); border-radius: var(--radius-md);
+                        padding: 1rem; cursor: pointer; background: var(--gray-50);
+                        transition: border-color 0.2s; text-align: center; height: 110px;
+                    ">
+                        <img id="edit-img-preview" src="" alt="" style="max-height: 80px; border-radius: 6px; object-fit: cover; display: none;">
+                        <i id="edit-upload-icon" class="fa-solid fa-cloud-arrow-up" style="font-size: 1.5rem; color: var(--gray-400);"></i>
+                        <span id="edit-upload-text" class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Upload from computer</span>
+                        <input type="file" id="edit-picture" name="picture" accept="image/*" style="display:none;" onchange="showEditPreview(this)">
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0;">
+                        <hr style="flex:1; border-color: var(--gray-200);">
+                        <span class="text-muted" style="font-size: 0.78rem; white-space: nowrap;">OR paste image URL</span>
+                        <hr style="flex:1; border-color: var(--gray-200);">
+                    </div>
+                    <input type="url" id="edit-picture-url" name="picture_url" placeholder="https://example.com/image.jpg"
+                        class="form-control" style="font-size: 0.85rem;"
+                        oninput="onEditUrlInput(this)">
+                    <p class="text-muted" style="font-size: 0.78rem; margin-top: 0.3rem;">
+                        <i class="fa-solid fa-circle-info"></i> Leave both empty to keep current photo.
+                    </p>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0; grid-column: 1 / -1;">
+                    <input type="checkbox" id="edit-vegeterian" name="vegeterian" style="width: 20px; height: 20px;">
+                    <label class="form-label" for="edit-vegeterian" style="margin-bottom: 0;">Is Vegetarian?</label>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.75rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+                <button type="button" onclick="closeEditModal()" class="btn btn-outline" style="flex: 1;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+@keyframes modalSlideIn {
+    from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+/* btn-danger style (in case not in style.css) */
+.btn-danger {
+    background: #dc2626; color: #fff; border: none;
+    border-radius: var(--radius-md); cursor: pointer;
+    font-weight: 600; text-decoration: none; display: inline-flex;
+    align-items: center; gap: 0.35rem; transition: background 0.2s;
+}
+.btn-danger:hover { background: #b91c1c; }
+</style>
+
+<script>
+/* ---- Add-item file preview ---- */
+function showAddPreview(input) {
+    if (!input.files || !input.files[0]) return;
+    // Clear URL field when file is chosen
+    document.getElementById('add-picture-url').value = '';
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img  = document.getElementById('item-img-preview');
+        const icon = document.getElementById('add-upload-icon');
+        const txt  = document.getElementById('add-upload-text');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        icon.style.display = 'none';
+        txt.textContent = input.files[0].name;
+        document.getElementById('add-drop-zone').style.borderColor = 'var(--primary)';
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+// When URL is pasted in Add form — clear file input & show preview
+function onAddUrlInput(urlInput) {
+    document.getElementById('picture').value = '';
+    const img  = document.getElementById('item-img-preview');
+    const icon = document.getElementById('add-upload-icon');
+    const txt  = document.getElementById('add-upload-text');
+    const url  = urlInput.value.trim();
+    if (url) {
+        img.src = url;
+        img.style.display = 'block';
+        icon.style.display = 'none';
+        txt.textContent = 'URL preview';
+        document.getElementById('add-drop-zone').style.borderColor = 'var(--primary)';
+    } else {
+        img.style.display = 'none';
+        icon.style.display = 'block';
+        txt.textContent = 'Upload from computer';
+        document.getElementById('add-drop-zone').style.borderColor = 'var(--gray-300)';
+    }
+}
+
+/* ---- Edit modal file preview ---- */
+function showEditPreview(input) {
+    if (!input.files || !input.files[0]) return;
+    // Clear URL field when file is chosen
+    document.getElementById('edit-picture-url').value = '';
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img  = document.getElementById('edit-img-preview');
+        const icon = document.getElementById('edit-upload-icon');
+        const txt  = document.getElementById('edit-upload-text');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        if (icon) icon.style.display = 'none';
+        txt.innerHTML = '<i class="fa-solid fa-check" style="color:green"></i> ' + input.files[0].name;
+        document.getElementById('edit-drop-zone').style.borderColor = 'var(--primary)';
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+// When URL is pasted in Edit modal — clear file input & show preview
+function onEditUrlInput(urlInput) {
+    document.getElementById('edit-picture').value = '';
+    const img  = document.getElementById('edit-img-preview');
+    const icon = document.getElementById('edit-upload-icon');
+    const txt  = document.getElementById('edit-upload-text');
+    const url  = urlInput.value.trim();
+    if (url) {
+        img.src = url;
+        img.style.display = 'block';
+        if (icon) icon.style.display = 'none';
+        txt.innerHTML = '<i class="fa-solid fa-link" style="color:var(--primary)"></i> URL preview';
+        document.getElementById('edit-drop-zone').style.borderColor = 'var(--primary)';
+    } else {
+        img.style.display = 'none';
+        if (icon) icon.style.display = 'block';
+        txt.textContent = 'Upload from computer';
+        document.getElementById('edit-drop-zone').style.borderColor = 'var(--gray-300)';
+    }
+}
+
+/* ---- Open / Close modal ---- */
+function openEditModal(id, name, description, price, vegeterian, pictureUrl) {
+    // Set form action and enctype
+    const form = document.getElementById('edit-item-form');
+    form.action = '/edit_menu_item/' + id;
+    form.enctype = 'multipart/form-data';
+
+    // Populate text fields
+    document.getElementById('edit-name').value        = name;
+    document.getElementById('edit-price').value       = price;
+    document.getElementById('edit-description').value = description;
+    document.getElementById('edit-vegeterian').checked = vegeterian;
+
+    // Reset file and URL inputs
+    document.getElementById('edit-picture').value = '';
+    document.getElementById('edit-picture-url').value = '';
+
+    // Show current image in the drop zone
+    const img  = document.getElementById('edit-img-preview');
+    const icon = document.getElementById('edit-upload-icon');
+    const txt  = document.getElementById('edit-upload-text');
+    if (pictureUrl) {
+        img.src = pictureUrl;
+        img.style.display = 'block';
+        if (icon) icon.style.display = 'none';
+        txt.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Click to change photo';
+    } else {
+        img.style.display = 'none';
+        if (icon) icon.style.display = 'block';
+        txt.textContent = 'Click to choose a photo';
+    }
+
+    // Show modal
+    document.getElementById('edit-modal-backdrop').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal-backdrop').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// Close modal on backdrop click
+document.getElementById('edit-modal-backdrop').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeEditModal();
+});
+</script>
+{% endblock %}

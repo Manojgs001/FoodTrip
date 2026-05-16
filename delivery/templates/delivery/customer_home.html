@@ -1,0 +1,163 @@
+﻿{% extends 'delivery/base.html' %}
+{% load delivery_extras %}
+
+{% block title %}Restaurants - FoodTrip{% endblock %}
+
+{% block content %}
+
+<!-- Search & Filter Bar -->
+<div class="search-filter-bar">
+    <div>
+        <h2 class="text-primary" style="margin-bottom:0.25rem;">Featured Restaurants</h2>
+        <p class="text-muted">Discover the best food around you, {{ username }}! 🍽️</p>
+    </div>
+    <form method="GET" action="{% url 'customer_home' %}" class="search-form" id="search-form">
+        <div style="position:relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;"></i>
+            <input type="text" name="q" value="{{ query }}" placeholder="Search restaurants..."
+                   class="form-control search-input" style="padding-left:2.5rem;" id="search-input">
+        </div>
+        <select name="cuisine" class="form-control" style="max-width:200px;" onchange="this.form.submit()">
+            <option value="">All Cuisines</option>
+            {% for c in all_cuisines %}
+            <option value="{{ c }}" {% if cuisine == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+        {% if query or cuisine %}
+        <a href="{% url 'customer_home' %}" class="btn btn-outline-sm" style="white-space:nowrap;">
+            <i class="fa-solid fa-xmark"></i> Clear
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Results count -->
+{% if query or cuisine %}
+<p class="text-muted" style="margin-bottom:1rem;">
+    Showing <strong>{{ restaurantList|length }}</strong> restaurant{{ restaurantList|length|pluralize }}
+    {% if query %}for "<strong>{{ query }}</strong>"{% endif %}
+    {% if cuisine %}in <strong>{{ cuisine }}</strong>{% endif %}
+</p>
+{% endif %}
+
+<!-- Restaurant Cards -->
+<div class="grid-container" id="restaurant-grid">
+    {% for r in restaurantList %}
+    <div class="card restaurant-card">
+        <div style="position:relative;overflow:hidden;">
+            <img src="{% if r.picture %}{{ r.get_picture_url }}{% else %}https://placehold.co/400x220/f97316/white?text={{ r.name|urlencode }}{% endif %}"
+                 alt="{{ r.name }}" class="card-img">
+            <!-- Cuisine badge on image -->
+            <span class="cuisine-badge">{{ r.cuisine }}</span>
+        </div>
+        <div class="card-body">
+            <h3 class="card-title">{{ r.name }}</h3>
+            <div class="card-footer">
+                <div class="rating-display" id="avg-{{ r.id }}">
+                    <i class="fa-solid fa-star" style="color:#facc15;"></i>
+                    <span class="avg-val">{{ r.rating }}</span>
+                </div>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <!-- Star Rating Widget -->
+                    <div class="star-widget" data-restaurant="{{ r.id }}" data-saved="{{ user_ratings|get_item:r.id }}" title="Rate this restaurant">
+                        {% for i in "12345" %}
+                        <i class="fa-regular fa-star star-btn" data-val="{{ forloop.counter }}" style="color:#d1d5db;font-size:1rem;transition:color 0.15s;"></i>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'view_menu' r.id %}" class="btn btn-primary-sm">View Menu</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not restaurantList %}
+<div class="empty-state">
+    <span class="empty-state-icon">🍽️</span>
+    <h3 style="margin-bottom:0.5rem;">No restaurants found</h3>
+    <p class="text-muted" style="margin-bottom:1.5rem;">
+        Try a different search or <a href="{% url 'customer_home' %}" class="text-primary">clear filters</a>.
+    </p>
+</div>
+{% endif %}
+
+<script>
+// Live search as user types (client-side filter for instant feel)
+document.getElementById('search-input').addEventListener('keyup', function() {
+    clearTimeout(this._timer);
+    this._timer = setTimeout(() => {
+        document.getElementById('search-form').submit();
+    }, 500);
+});
+
+// Star rating AJAX
+document.querySelectorAll('.star-widget').forEach(widget => {
+    const restaurantId = widget.dataset.restaurant;
+    const stars = widget.querySelectorAll('.star-btn');
+
+    stars.forEach((star, idx) => {
+        star.addEventListener('mouseover', () => {
+            stars.forEach((s, i) => {
+                s.style.color = i <= idx ? '#facc15' : '#d1d5db';
+                s.className = s.className.replace('fa-regular', 'fa-solid').replace('fa-solid', i <= idx ? 'fa-solid' : 'fa-regular');
+            });
+        });
+        star.addEventListener('mouseleave', () => {
+            // reset to saved value
+            const saved = parseInt(widget.dataset.saved || 0);
+            stars.forEach((s, i) => {
+                s.style.color = i < saved ? '#facc15' : '#d1d5db';
+            });
+        });
+        star.addEventListener('click', () => {
+            const val = idx + 1;
+            widget.dataset.saved = val;
+            fetch(`/rate_restaurant/${restaurantId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `stars=${val}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.querySelector(`#avg-${restaurantId} .avg-val`).textContent = data.new_avg;
+                    stars.forEach((s, i) => {
+                        s.style.color = i < data.user_stars ? '#facc15' : '#d1d5db';
+                    });
+                    // Show toast
+                    showToast(`Rated ${data.user_stars}★ — thank you!`);
+                }
+            });
+        });
+    });
+
+    // Set saved initial value from data-saved attribute
+    const savedVal = parseInt(widget.dataset.saved || 0);
+    stars.forEach((s, i) => {
+        if (i < savedVal) {
+            s.style.color = '#facc15';
+            s.className = s.className.replace('fa-regular','fa-solid');
+        }
+    });
+});
+
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    Object.assign(t.style, {
+        position:'fixed', bottom:'24px', right:'24px',
+        background:'#111827', color:'white',
+        padding:'0.85rem 1.5rem', borderRadius:'10px',
+        boxShadow:'0 10px 30px rgba(0,0,0,0.2)',
+        zIndex:'999', fontSize:'0.95rem',
+        animation:'fadeInUp 0.3s ease'
+    });
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 2500);
+}
+</script>
+{% endblock %}

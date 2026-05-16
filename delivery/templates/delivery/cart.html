@@ -1,0 +1,103 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Your Cart - FoodTrip{% endblock %}
+
+{% block content %}
+<div class="header-section" style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <h2 class="text-primary"><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2>
+        <p class="text-muted">Review your items before checkout, {{ username }}</p>
+    </div>
+    <a href="{% url 'customer_home' %}" class="btn btn-outline-sm">
+        <i class="fa-solid fa-arrow-left"></i> Add More
+    </a>
+</div>
+
+{% if cart_items %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:right;">Subtotal</th>
+                    <th style="text-align:center;">Remove</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ci in cart_items %}
+                <tr>
+                    <td>
+                        <img src="{% if ci.item.picture %}{{ ci.item.get_picture_url }}{% else %}https://placehold.co/60x60/f97316/white?text=🍽{% endif %}"
+                             alt="{{ ci.item.name }}" class="table-img">
+                    </td>
+                    <td>
+                        <span style="font-weight: 600;">{{ ci.item.name }}</span><br>
+                        <small class="text-muted">{{ ci.item.description }}</small>
+                    </td>
+                    <td class="price">₹{{ ci.item.price }}</td>
+
+                    <!-- Quantity Controls -->
+                    <td style="text-align:center;">
+                        <div style="display:inline-flex; align-items:center; gap:0.5rem; background:var(--gray-100); border-radius:999px; padding:0.25rem 0.5rem;">
+                            <form method="POST" action="{% url 'update_cart_quantity' ci.item.id %}" style="margin:0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="decrease">
+                                <button type="submit" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--primary);padding:0 0.25rem;line-height:1;" title="Decrease">
+                                    <i class="fa-solid fa-minus"></i>
+                                </button>
+                            </form>
+                            <span style="font-weight:700; min-width:1.5rem; text-align:center;">{{ ci.quantity }}</span>
+                            <form method="POST" action="{% url 'update_cart_quantity' ci.item.id %}" style="margin:0;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="increase">
+                                <button type="submit" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--primary);padding:0 0.25rem;line-height:1;" title="Increase">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+
+                    <td class="price" style="text-align:right;">₹{{ ci.subtotal }}</td>
+
+                    <!-- Remove Button -->
+                    <td style="text-align:center;">
+                        <a href="{% url 'remove_from_cart' ci.item.id %}"
+                           onclick="return confirm('Remove {{ ci.item.name }} from cart?')"
+                           style="color:#dc2626; font-size:1.1rem;" title="Remove">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Order Summary -->
+    <div style="background: var(--surface); padding: 2rem; border-radius: var(--radius-lg); margin-top: 2rem; box-shadow: var(--shadow-md);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h3 class="text-secondary" style="margin:0;">Total Amount</h3>
+                <p class="price" style="font-size: 2rem; color: var(--primary); margin:0.25rem 0 0;">₹{{ total_price }}</p>
+            </div>
+            <form action="{% url 'checkout' %}">
+                <button type="submit" class="btn btn-primary" style="padding: 1rem 3rem; font-size: 1.1rem;">
+                    <i class="fa-solid fa-credit-card"></i> Proceed to Checkout
+                </button>
+            </form>
+        </div>
+    </div>
+
+{% else %}
+    <div class="text-center text-muted" style="margin-top: 4rem;">
+        <i class="fa-solid fa-cart-arrow-down" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+        <h3>Your cart is empty!</h3>
+        <p>Go back to the restaurants page to add some tasty food.</p>
+        <br>
+        <a href="{% url 'customer_home' %}" class="btn btn-primary-sm">Browse Restaurants</a>
+    </div>
+{% endif %}
+{% endblock %}

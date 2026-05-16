@@ -1,0 +1,96 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Menu - {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="header-section" style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <h2 class="text-primary">{{ restaurant.name }} Menu</h2>
+        <p class="text-muted">Choose your favorite items</p>
+    </div>
+    <a href="{% url 'show_cart' %}" class="btn btn-outline-sm">
+        <i class="fa-solid fa-cart-shopping"></i> Go to Cart
+    </a>
+</div>
+
+<div class="grid-container">
+    {% for item in itemList %}
+    <div class="card">
+        <img src="{% if item.picture %}{{ item.get_picture_url }}{% else %}https://placehold.co/400x250/f97316/white?text={{ item.name|urlencode }}{% endif %}" alt="{{ item.name }}" class="card-img">
+
+        <div class="card-body">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <h3 class="card-title">{{ item.name }}</h3>
+                {% if item.vegeterian %}
+                    <span class="badge badge-veg"><i class="fa-solid fa-leaf"></i> Veg</span>
+                {% else %}
+                    <span class="badge badge-nonveg"><i class="fa-solid fa-drumstick-bite"></i> Non-Veg</span>
+                {% endif %}
+            </div>
+            <p class="card-subtitle">{{ item.description }}</p>
+            <div class="card-footer">
+                <span class="price">₹{{ item.price|floatformat:0 }}</span>
+                <a href="#" onclick="addToCart(event, '{% url 'add_to_cart' item.id %}')" class="btn btn-primary-sm">
+                    <i class="fa-solid fa-plus"></i> Add
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not itemList %}
+<div class="empty-state">
+    <span class="empty-state-icon">🍽️</span>
+    <h3 style="margin-bottom:0.5rem;">No menu items yet</h3>
+    <p class="text-muted">This restaurant hasn't added any items yet.</p>
+</div>
+{% endif %}
+
+<script>
+function addToCart(event, url) {
+    event.preventDefault();
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Adding...';
+    
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Added!';
+            btn.style.backgroundColor = '#16a34a';
+            btn.style.borderColor = '#16a34a';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.backgroundColor = '';
+                btn.style.borderColor = '';
+            }, 2000);
+            
+            // Show toast notification
+            const toast = document.createElement('div');
+            toast.innerHTML = '<i class="fa-solid fa-circle-check"></i> Item added to cart!';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.right = '20px';
+            toast.style.backgroundColor = '#111827';
+            toast.style.color = 'white';
+            toast.style.padding = '1rem 1.5rem';
+            toast.style.borderRadius = 'var(--radius-md)';
+            toast.style.boxShadow = 'var(--shadow-lg)';
+            toast.style.zIndex = '1000';
+            toast.style.transition = 'all 0.3s ease';
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    });
+}
+</script>
+{% endblock %}
