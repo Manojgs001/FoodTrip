@@ -1,0 +1,96 @@
+﻿{% extends 'delivery/base.html' %}
+
+{% block title %}Checkout - FoodTrip{% endblock %}
+
+{% block content %}
+<div class="auth-container" style="max-width: 600px;">
+    <h2 class="text-center text-primary" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-lock"></i> Secure Checkout</h2>
+    
+    {% if error %}
+    <div style="background: #fee2e2; color: var(--danger); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+    </div>
+    {% endif %}
+    
+    <h3 class="text-secondary" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Order Summary</h3>
+    
+    <div style="margin-bottom: 2rem;">
+        {% for item in cart_items %}
+        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px dashed var(--border);">
+            <span>{{ item.name }} {% if item.quantity > 1 %}<small class="text-muted">×{{ item.quantity }}</small>{% endif %}</span>
+            <span style="font-weight: 600;">₹{{ item.price }}</span>
+        </div>
+        {% endfor %}
+        <div style="display: flex; justify-content: space-between; padding: 1rem 0; font-size: 1.25rem; font-weight: 700; color: var(--primary);">
+            <span>Total Payable</span>
+            <span>₹{{ total_price }}</span>
+        </div>
+    </div>
+
+    {% if mock_mode %}
+    <div style="background: #fff3cd; color: #856404; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; border: 1px solid #ffeeba;">
+        <i class="fa-solid fa-flask"></i> <strong>Test Mode Enabled:</strong> Valid Razorpay API keys were not found. You can proceed with a simulated payment to test the flow.
+    </div>
+    <button id="mock-rzp-button" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem;"><i class="fa-solid fa-flask"></i> Simulate Payment (Test)</button>
+    {% else %}
+    <button id="rzp-button" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem;"><i class="fa-solid fa-shield-halved"></i> Pay securely with Razorpay</button>
+    {% endif %}
+</div>
+
+<!-- Razorpay Integration -->
+{% if not mock_mode and not error %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+{% endif %}
+
+{% if not error %}
+<form id="razorpay-form" action="{% url 'orders' %}" method="POST" style="display: none;">
+    {% csrf_token %}
+    <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+    <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+    <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+</form>
+{% endif %}
+
+<script>
+    {% if not error %}
+        {% if mock_mode %}
+        document.getElementById("mock-rzp-button").onclick = function (e) {
+            e.preventDefault();
+            // Simulate Razorpay successful payment
+            document.getElementById('razorpay_payment_id').value = "mock_payment_id_for_testing";
+            document.getElementById('razorpay_order_id').value = "{{ order_id }}";
+            document.getElementById('razorpay_signature').value = "mock_signature_for_testing";
+            document.getElementById('razorpay-form').submit();
+        };
+        {% else %}
+        var options = {
+            key: "{{ razorpay_key_id }}",
+            amount: {{ amount_paise }},   // integer paise — calculated in view
+            currency: "INR",
+            name: "FoodTrip",
+            description: "Food Order Payment",
+            image: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>",
+            order_id: "{{ order_id }}",
+            handler: function (response) {
+                document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                document.getElementById('razorpay_order_id').value   = response.razorpay_order_id;
+                document.getElementById('razorpay_signature').value  = response.razorpay_signature;
+                document.getElementById('razorpay-form').submit();
+            },
+            prefill: {
+                name:    "{{ username }}",
+                email:   "",
+                contact: "",
+            },
+            theme: { color: "#ff5722" },
+        };
+        var rzp = new Razorpay(options);
+
+        document.getElementById("rzp-button").onclick = function (e) {
+            rzp.open();
+            e.preventDefault();
+        };
+        {% endif %}
+    {% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Order Status - FoodTrip{% endblock %}
+
+{% block content %}
+
+{% if status == 'success' %}
+<div class="hero" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);">
+    <i class="fa-solid fa-circle-check" style="font-size: 4rem; color: var(--success); margin-bottom: 1rem;"></i>
+    <h1 style="color: var(--success);">Order Placed Successfully!</h1>
+    <p style="font-size: 1.25rem;">Thank you for your order, {{ username }}. Your payment was securely verified.</p>
+</div>
+
+<div class="auth-container" style="max-width: 600px; margin-top: -2rem; position: relative;">
+    <h3 class="text-primary" style="margin-bottom: 1rem;"><i class="fa-solid fa-truck-fast"></i> Delivery Details</h3>
+    <p style="font-size: 1.1rem; line-height: 1.8; background: #f9fafb; padding: 1.5rem; border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
+        <strong>Delivery Address:</strong><br>
+        {{ customer.address }}
+    </p>
+    
+    <p class="text-muted" style="margin-top: 1.5rem;">
+        Your delicious food is being prepared and will be delivered to this location shortly.
+    </p>
+    
+    <div style="margin-top: 2rem; text-align: center;">
+        <a href="/" class="btn btn-outline"><i class="fa-solid fa-home"></i> Back to Home</a>
+    </div>
+</div>
+
+{% elif status == 'failed' %}
+<div class="hero" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);">
+    <i class="fa-solid fa-circle-xmark" style="font-size: 4rem; color: var(--danger); margin-bottom: 1rem;"></i>
+    <h1 style="color: var(--danger);">Payment Verification Failed</h1>
+    <p style="font-size: 1.25rem; color: var(--danger);">{{ error }}</p>
+</div>
+<div class="auth-container" style="max-width: 600px; margin-top: -2rem; position: relative; text-align: center;">
+    <p class="text-muted" style="margin-bottom: 2rem;">Please try placing your order again. If money was deducted, it will be refunded automatically within 3-5 business days.</p>
+    <a href="{% url 'show_cart' %}" class="btn btn-primary"><i class="fa-solid fa-cart-shopping"></i> Return to Cart</a>
+</div>
+
+{% else %}
+<div class="hero" style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);">
+    <i class="fa-solid fa-clock-rotate-left" style="font-size: 4rem; color: var(--secondary); margin-bottom: 1rem;"></i>
+    <h1 style="color: var(--secondary);">Order History</h1>
+    <p style="font-size: 1.25rem;">View your past orders here.</p>
+</div>
+<div class="auth-container" style="max-width: 600px; margin-top: -2rem; position: relative; text-align: center;">
+    <p class="text-muted" style="margin-bottom: 2rem;">Order history tracking will be available soon!</p>
+    <a href="/" class="btn btn-outline"><i class="fa-solid fa-home"></i> Back to Home</a>
+</div>
+{% endif %}
+
+{% endblock %}
