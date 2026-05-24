@@ -1,0 +1,26 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Admin Dashboard - FoodTrip{% endblock %}
+
+{% block content %}
+<div class="hero" style="background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);">
+    <h1 style="color: var(--secondary);">Admin Dashboard</h1>
+    <p>Manage your platform's restaurants and menus efficiently.</p>
+</div>
+
+<div class="grid-container" style="max-width: 800px; margin: 0 auto;">
+    <div class="card" style="text-align: center; padding: 2rem;">
+        <i class="fa-solid fa-store" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+        <h3 class="card-title">Manage Restaurants</h3>
+        <p class="text-muted" style="margin-bottom: 1.5rem;">View, update, or delete existing restaurants and their menus.</p>
+        <a href="{% url 'open_show_restaurant' %}" class="btn btn-primary">View All Restaurants</a>
+    </div>
+    
+    <div class="card" style="text-align: center; padding: 2rem;">
+        <i class="fa-solid fa-circle-plus" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;"></i>
+        <h3 class="card-title">Add New Restaurant</h3>
+        <p class="text-muted" style="margin-bottom: 1.5rem;">Onboard a new restaurant to the FoodTrip platform.</p>
+        <a href="{% url 'open_add_restaurant' %}" class="btn btn-outline" style="border-color: var(--success); color: var(--success);">Add Restaurant</a>
+    </div>
+</div>
+{% endblock %}

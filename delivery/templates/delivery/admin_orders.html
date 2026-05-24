@@ -1,0 +1,50 @@
+{% extends 'delivery/base.html' %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin: 2rem auto;">
+    <h2 class="text-primary" style="margin-bottom: 2rem;"><i class="fa-solid fa-clipboard-list"></i> Customer Orders Dashboard</h2>
+
+    {% if orders %}
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-md);">
+            <thead style="background: var(--gray-100);">
+                <tr>
+                    <th style="padding: 1rem; text-align: left;">Order ID</th>
+                    <th style="padding: 1rem; text-align: left;">Customer</th>
+                    <th style="padding: 1rem; text-align: left;">Date</th>
+                    <th style="padding: 1rem; text-align: left;">Total</th>
+                    <th style="padding: 1rem; text-align: left;">Status</th>
+                    <th style="padding: 1rem; text-align: left;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for order in orders %}
+                <tr style="border-bottom: 1px solid var(--gray-200);">
+                    <td style="padding: 1rem;">#{{ order.id }}</td>
+                    <td style="padding: 1rem;">{{ order.customer.username }}</td>
+                    <td style="padding: 1rem;">{{ order.created_at|date:"M j, g:i a" }}</td>
+                    <td style="padding: 1rem;">₹{{ order.total_price }}</td>
+                    <td style="padding: 1rem;">
+                        <form method="POST" action="{% url 'update_order_status' order.id %}">
+                            {% csrf_token %}
+                            <select name="status" class="form-control" style="padding: 0.25rem; font-size: 0.9rem;" onchange="this.form.submit()">
+                                <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="Paid" {% if order.status == 'Paid' %}selected{% endif %}>Paid</option>
+                                <option value="Preparing" {% if order.status == 'Preparing' %}selected{% endif %}>Preparing</option>
+                                <option value="Out for Delivery" {% if order.status == 'Out for Delivery' %}selected{% endif %}>Out for Delivery</option>
+                                <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="Failed" {% if order.status == 'Failed' %}selected{% endif %}>Failed</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td style="padding: 1rem;">
+                        <button class="btn btn-outline-sm" type="button" onclick="alert('Items:\n{% for item in order.items.all %}- {{ item.item.name }} (₹{{ item.price_at_purchase }})\n{% endfor %}')">View</button>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No orders found.</p>
+    {% endif %}
+</div>
+{% endblock %}
