@@ -1,0 +1,38 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Crave Detector - FoodTrip{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 4rem auto; text-align: center;">
+    <div style="margin-bottom: 3rem;">
+        <i class="fa-solid fa-wand-magic-sparkles text-primary" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+        <h1 class="text-primary" style="font-size: 2.5rem; margin-bottom: 0.5rem;">Crave Detector</h1>
+        <p class="text-muted" style="font-size: 1.2rem;">Tell our AI Food Sommelier what you're craving, and we'll find the perfect dish for you!</p>
+    </div>
+
+    <form method="POST" style="background: white; padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); margin-bottom: 2rem;">
+        {% csrf_token %}
+        <div style="margin-bottom: 1.5rem; text-align: left;">
+            <label for="prompt" style="font-weight: 600; margin-bottom: 0.5rem; display: block;">What are you in the mood for?</label>
+            <textarea name="prompt" id="prompt" rows="3" class="form-control" placeholder="E.g., I'm feeling sick and need something warm and spicy under ₹200..." required style="width: 100%; padding: 1rem; border-radius: var(--radius-md); border: 2px solid var(--gray-200); font-family: inherit; font-size: 1rem; resize: vertical;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+            <i class="fa-solid fa-brain"></i> Analyze Craving
+        </button>
+    </form>
+
+    {% if response %}
+    <div style="background: var(--primary-light); border: 2px solid var(--primary); border-radius: var(--radius-lg); padding: 2rem; text-align: left; animation: slideUp 0.5s ease-out;">
+        <h3 class="text-primary" style="margin-bottom: 1rem;"><i class="fa-solid fa-robot"></i> AI Recommendation:</h3>
+        <p style="font-size: 1.1rem; line-height: 1.6; color: var(--gray-800);">{{ response|linebreaksbr }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
