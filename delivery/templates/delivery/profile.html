@@ -1,0 +1,95 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}My Profile - FoodTrip{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="width: 90px; height: 90px; background: linear-gradient(135deg, #f97316, #ef4444); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 2.5rem; color: white; font-weight: 700;">
+            {{ customer.username|first|upper }}
+        </div>
+        <h2 class="text-primary">{{ customer.username }}</h2>
+        <p class="text-muted">Manage your account details</p>
+    </div>
+
+    <div class="card" style="padding: 2rem;">
+        <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-user-pen"></i> Edit Profile</h3>
+        <form method="POST" action="{% url 'profile' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
+                    <label class="form-label">Username</label>
+                    <input type="text" value="{{ customer.username }}" class="form-control" disabled style="background: var(--gray-100); cursor: not-allowed;">
+                    <small class="text-muted">Username cannot be changed</small>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" value="{{ customer.email }}" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Mobile</label>
+                    <input type="tel" name="mobile" value="{{ customer.mobile }}" class="form-control" maxlength="10">
+                </div>
+                <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
+                    <label class="form-label">Delivery Address</label>
+                    <textarea name="address" class="form-control" rows="2">{{ customer.address }}</textarea>
+                </div>
+
+                <div style="grid-column: 1 / -1; border-top: 1px solid var(--gray-200); padding-top: 1.5rem; margin-top: 0.5rem;">
+                    <h4 style="margin-bottom: 1rem; color: var(--gray-600);"><i class="fa-solid fa-lock"></i> Change Password <small class="text-muted" style="font-size: 0.8rem;">(leave blank to keep current)</small></h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">New Password</label>
+                            <input type="password" name="new_password" id="new-pass" class="form-control" placeholder="New password...">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" id="confirm-pass" class="form-control" placeholder="Confirm...">
+                            <p id="pass-mismatch" style="color: #dc2626; font-size: 0.8rem; display: none; margin-top: 0.3rem;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Passwords don't match!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem; width: 100%;">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+        </form>
+    </div>
+
+    <!-- Quick Stats -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+        <a href="{% url 'order_history' %}" style="text-decoration: none;">
+            <div class="card" style="padding: 1.5rem; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                <i class="fa-solid fa-clock-rotate-left" style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                <p style="font-weight: 600; margin: 0;">Order History</p>
+            </div>
+        </a>
+        <a href="{% url 'show_cart' %}" style="text-decoration: none;">
+            <div class="card" style="padding: 1.5rem; text-align: center; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                <i class="fa-solid fa-cart-shopping" style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                <p style="font-weight: 600; margin: 0;">My Cart</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<script>
+document.getElementById('confirm-pass').addEventListener('input', function() {
+    const pw1 = document.getElementById('new-pass').value;
+    const pw2 = this.value;
+    const msg = document.getElementById('pass-mismatch');
+    msg.style.display = (pw2 && pw1 !== pw2) ? 'block' : 'none';
+});
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    const pw1 = document.getElementById('new-pass').value;
+    const pw2 = document.getElementById('confirm-pass').value;
+    if (pw1 && pw1 !== pw2) {
+        e.preventDefault();
+        document.getElementById('pass-mismatch').style.display = 'block';
+    }
+});
+</script>
+{% endblock %}
