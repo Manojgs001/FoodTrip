@@ -1,0 +1,145 @@
+﻿{% extends 'delivery/base.html' %}
+{% block title %}Admin Dashboard - FoodTrip{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:2rem;">
+    <h2 class="text-primary">📊 Admin Dashboard</h2>
+    <p class="text-muted">Overview of your FoodTrip platform</p>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#ff5722,#ff8a65);">
+            <i class="fa-solid fa-receipt"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">{{ total_orders }}</div>
+            <div class="stat-label">Total Orders</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#34d399);">
+            <i class="fa-solid fa-indian-rupee-sign"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">₹{{ total_revenue|floatformat:0 }}</div>
+            <div class="stat-label">Total Revenue</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);">
+            <i class="fa-solid fa-users"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">{{ total_customers }}</div>
+            <div class="stat-label">Customers</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">
+            <i class="fa-solid fa-utensils"></i>
+        </div>
+        <div class="stat-info">
+            <div class="stat-value">{{ total_items }}</div>
+            <div class="stat-label">Menu Items</div>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem;">
+
+    <!-- Order Status Breakdown -->
+    <div class="card" style="padding:1.5rem;">
+        <h3 style="margin-bottom:1.25rem;color:var(--secondary);">
+            <i class="fa-solid fa-chart-pie" style="color:var(--primary);"></i> Orders by Status
+        </h3>
+        {% for status, count in status_counts.items %}
+        <div style="margin-bottom:0.85rem;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.3rem;">
+                <span style="font-weight:600;font-size:0.9rem;">{{ status }}</span>
+                <span class="text-muted" style="font-size:0.9rem;">{{ count }}</span>
+            </div>
+            <div style="background:#f3f4f6;border-radius:99px;height:8px;overflow:hidden;">
+                {% if total_orders > 0 %}
+                <div style="height:100%;width:{% widthratio count total_orders 100 %}%;
+                    background:{% if status == 'Delivered' %}#10b981
+                               {% elif status == 'Paid' %}#6366f1
+                               {% elif status == 'Preparing' %}#f59e0b
+                               {% elif status == 'Out for Delivery' %}#3b82f6
+                               {% elif status == 'Failed' %}#ef4444
+                               {% else %}#9ca3af{% endif %};
+                    border-radius:99px;transition:width 1s ease;"></div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Top Restaurants -->
+    <div class="card" style="padding:1.5rem;">
+        <h3 style="margin-bottom:1.25rem;color:var(--secondary);">
+            <i class="fa-solid fa-trophy" style="color:#f59e0b;"></i> Top Restaurants
+        </h3>
+        {% for r in top_restaurants %}
+        <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 0;
+                    border-bottom:1px solid var(--border);">
+            <span style="font-size:1.5rem;font-weight:800;color:var(--primary);min-width:2rem;">{{ forloop.counter }}</span>
+            <img src="{% if r.picture %}{{ r.get_picture_url }}{% else %}https://placehold.co/48x48/f97316/white?text={{ r.name|first }}{% endif %}"
+                 style="width:48px;height:48px;border-radius:50%;object-fit:cover;">
+            <div style="flex:1;">
+                <div style="font-weight:600;">{{ r.name }}</div>
+                <div class="text-muted" style="font-size:0.8rem;">{{ r.cuisine }}</div>
+            </div>
+            <span class="badge badge-rating"><i class="fa-solid fa-star"></i> {{ r.rating }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted">No data yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="table-container" style="margin-top:2rem;">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);">
+        <h3 style="margin:0;color:var(--secondary);">
+            <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);"></i> Recent Orders
+        </h3>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in recent_orders %}
+            <tr>
+                <td><strong>#{{ order.id }}</strong></td>
+                <td>{{ order.customer.username }}</td>
+                <td class="price">₹{{ order.total_price|floatformat:0 }}</td>
+                <td>
+                    <span class="status-badge status-{{ order.status|lower|cut:' ' }}">
+                        {{ order.status }}
+                    </span>
+                </td>
+                <td class="text-muted" style="font-size:0.85rem;">{{ order.created_at|date:"d M Y, g:i A" }}</td>
+                <td>
+                    <a href="{% url 'admin_orders' %}" class="btn btn-outline-sm" style="font-size:0.78rem;padding:0.3rem 0.75rem;">
+                        Manage
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-muted text-center">No orders yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
