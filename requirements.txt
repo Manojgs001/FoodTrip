@@ -1,7 +1,8 @@
-Django>=4.0.0
-razorpay==2.0.1
+Django>=4.2
 gunicorn
 whitenoise
 dj-database-url
 psycopg2-binary
 python-dotenv
+razorpay
+google-generativeai
