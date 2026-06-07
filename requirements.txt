@@ -5,4 +5,4 @@ dj-database-url
 psycopg2-binary
 python-dotenv
 razorpay
-google-generativeai
+google-genai
