@@ -9,8 +9,9 @@
 <div class="search-filter-bar">
     <div>
         <h2 class="text-primary" style="margin-bottom:0.25rem;">Featured Restaurants</h2>
-        <p class="text-muted">Discover the best food around you, {{ username }}! 🍽️</p>
+        <p class="text-muted">Discover the best food around you, {{ username }}! </p>
     </div>
+
     <form method="GET" action="{% url 'customer_home' %}" class="search-form" id="search-form">
         <div style="position:relative;">
             <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;"></i>
@@ -28,10 +29,58 @@
             <i class="fa-solid fa-xmark"></i> Clear
         </a>
         {% endif %}
+        <button type="button" id="ai-toggle-btn" onclick="toggleAIMode()"
+            style="display:flex;align-items:center;gap:0.4rem;padding:0.5rem 1rem;
+                   background:linear-gradient(135deg,#7c3aed,#a855f7);
+                   color:white;border:none;border-radius:var(--radius-md);
+                   font-weight:600;cursor:pointer;white-space:nowrap;
+                   transition:all 0.3s ease;font-size:0.9rem;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Ask AI
+        </button>
     </form>
 </div>
 
-<!-- Results count -->
+<!-- AI Craving Panel -->
+<div id="ai-panel" style="display:none;margin-bottom:1.5rem;animation:fadeInUp 0.3s ease;">
+    <div style="background:linear-gradient(135deg,#f3e8ff,#ede9fe);
+                border:2px solid #a855f7;border-radius:var(--radius-lg);padding:1.25rem 1.5rem;">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.85rem;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color:#7c3aed;"></i>
+            <strong style="color:#6d28d9;">AI Crave Detector</strong>
+            <span class="text-muted" style="font-size:0.85rem;">Tell me your mood and I will find the perfect dish</span>
+        </div>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <input type="text" id="ai-input"
+                   placeholder="e.g. something spicy, light breakfast, comfort food..."
+                   class="form-control" style="flex:1;min-width:220px;border-color:#a855f7;"
+                   onkeydown="if(event.key==='Enter'){askAI();}">
+            <button onclick="askAI()" id="ai-submit-btn"
+                style="padding:0.6rem 1.25rem;background:#7c3aed;color:white;
+                       border:none;border-radius:var(--radius-md);font-weight:600;
+                       cursor:pointer;display:flex;align-items:center;gap:0.5rem;">
+                <i class="fa-solid fa-sparkles"></i> Find Food
+            </button>
+            <button onclick="closeAI()"
+                style="padding:0.6rem 1rem;background:transparent;color:#6d28d9;
+                       border:2px solid #a855f7;border-radius:var(--radius-md);font-weight:600;cursor:pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="ai-loading" style="display:none;margin-top:1rem;text-align:center;color:#7c3aed;">
+            <i class="fa-solid fa-circle-notch fa-spin"></i> Finding the perfect dish for you...
+        </div>
+        <div id="ai-response" style="display:none;margin-top:1rem;">
+            <div style="background:white;border-radius:var(--radius-md);padding:1rem 1.25rem;
+                        border-left:4px solid #7c3aed;box-shadow:0 2px 8px rgba(124,58,237,0.1);">
+                <div style="display:flex;gap:0.5rem;align-items:flex-start;">
+                    <span style="font-size:1.5rem;">🤖</span>
+                    <p id="ai-text" style="margin:0;line-height:1.7;color:var(--text-main);"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% if query or cuisine %}
 <p class="text-muted" style="margin-bottom:1rem;">
     Showing <strong>{{ restaurantList|length }}</strong> restaurant{{ restaurantList|length|pluralize }}
@@ -40,14 +89,12 @@
 </p>
 {% endif %}
 
-<!-- Restaurant Cards -->
 <div class="grid-container" id="restaurant-grid">
     {% for r in restaurantList %}
-    <div class="card restaurant-card">
+    <div class="card restaurant-card" data-name="{{ r.name|lower }}">
         <div style="position:relative;overflow:hidden;">
             <img src="{% if r.picture %}{{ r.get_picture_url }}{% else %}https://placehold.co/400x220/f97316/white?text={{ r.name|urlencode }}{% endif %}"
                  alt="{{ r.name }}" class="card-img">
-            <!-- Cuisine badge on image -->
             <span class="cuisine-badge">{{ r.cuisine }}</span>
         </div>
         <div class="card-body">
@@ -58,7 +105,6 @@
                     <span class="avg-val">{{ r.rating }}</span>
                 </div>
                 <div style="display:flex;gap:0.5rem;align-items:center;">
-                    <!-- Star Rating Widget -->
                     <div class="star-widget" data-restaurant="{{ r.id }}" data-saved="{{ user_ratings|get_item:r.id }}" title="Rate this restaurant">
                         {% for i in "12345" %}
                         <i class="fa-regular fa-star star-btn" data-val="{{ forloop.counter }}" style="color:#d1d5db;font-size:1rem;transition:color 0.15s;"></i>
@@ -74,7 +120,7 @@
 
 {% if not restaurantList %}
 <div class="empty-state">
-    <span class="empty-state-icon">🍽️</span>
+    <span class="empty-state-icon">️</span>
     <h3 style="margin-bottom:0.5rem;">No restaurants found</h3>
     <p class="text-muted" style="margin-bottom:1.5rem;">
         Try a different search or <a href="{% url 'customer_home' %}" class="text-primary">clear filters</a>.
@@ -83,65 +129,116 @@
 {% endif %}
 
 <script>
-// Live search as user types (client-side filter for instant feel)
+function toggleAIMode() {
+    const panel = document.getElementById('ai-panel');
+    const btn   = document.getElementById('ai-toggle-btn');
+    const isOpen = panel.style.display !== 'none';
+    if (isOpen) { closeAI(); return; }
+    panel.style.display = 'block';
+    btn.style.background = 'linear-gradient(135deg,#5b21b6,#7c3aed)';
+    btn.innerHTML = '<i class="fa-solid fa-xmark"></i> Close AI';
+    document.getElementById('ai-input').focus();
+}
+
+function closeAI() {
+    document.getElementById('ai-panel').style.display = 'none';
+    document.getElementById('ai-response').style.display = 'none';
+    document.getElementById('ai-loading').style.display = 'none';
+    document.getElementById('ai-toggle-btn').style.background = 'linear-gradient(135deg,#7c3aed,#a855f7)';
+    document.getElementById('ai-toggle-btn').innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Ask AI';
+    document.querySelectorAll('.restaurant-card').forEach(c => {
+        c.style.border = ''; c.style.boxShadow = ''; c.style.transform = ''; c.style.opacity = '1';
+    });
+}
+
+function askAI() {
+    const prompt = document.getElementById('ai-input').value.trim();
+    if (!prompt) return;
+    document.getElementById('ai-loading').style.display = 'block';
+    document.getElementById('ai-response').style.display = 'none';
+    document.getElementById('ai-submit-btn').disabled = true;
+
+    fetch('/ai_suggest/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'prompt=' + encodeURIComponent(prompt)
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('ai-loading').style.display = 'none';
+        document.getElementById('ai-submit-btn').disabled = false;
+        document.getElementById('ai-text').textContent = data.error ? 'Oops! ' + data.error : data.suggestion;
+        document.getElementById('ai-response').style.display = 'block';
+        if (!data.error) highlightRestaurants(data.restaurants || []);
+    })
+    .catch(() => {
+        document.getElementById('ai-loading').style.display = 'none';
+        document.getElementById('ai-submit-btn').disabled = false;
+        document.getElementById('ai-text').textContent = 'Something went wrong. Please try again.';
+        document.getElementById('ai-response').style.display = 'block';
+    });
+}
+
+function highlightRestaurants(names) {
+    if (!names.length) return;
+    const normalised = names.map(n => n.toLowerCase().trim());
+    document.querySelectorAll('.restaurant-card').forEach(card => {
+        const cardName = card.dataset.name || '';
+        const isMatch  = normalised.some(n => cardName.includes(n) || n.includes(cardName));
+        if (isMatch) {
+            card.style.border    = '2px solid #7c3aed';
+            card.style.boxShadow = '0 0 0 4px rgba(124,58,237,0.15)';
+            card.style.transform = 'translateY(-4px)';
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            card.style.opacity = '0.45';
+        }
+    });
+    setTimeout(() => {
+        document.querySelectorAll('.restaurant-card').forEach(c => { c.style.opacity = '1'; });
+    }, 8000);
+}
+
 document.getElementById('search-input').addEventListener('keyup', function() {
     clearTimeout(this._timer);
-    this._timer = setTimeout(() => {
-        document.getElementById('search-form').submit();
-    }, 500);
+    this._timer = setTimeout(() => { document.getElementById('search-form').submit(); }, 500);
 });
 
-// Star rating AJAX
 document.querySelectorAll('.star-widget').forEach(widget => {
     const restaurantId = widget.dataset.restaurant;
     const stars = widget.querySelectorAll('.star-btn');
-
     stars.forEach((star, idx) => {
         star.addEventListener('mouseover', () => {
             stars.forEach((s, i) => {
                 s.style.color = i <= idx ? '#facc15' : '#d1d5db';
-                s.className = s.className.replace('fa-regular', 'fa-solid').replace('fa-solid', i <= idx ? 'fa-solid' : 'fa-regular');
+                s.className = s.className.replace('fa-regular','fa-solid').replace('fa-solid', i <= idx ? 'fa-solid' : 'fa-regular');
             });
         });
         star.addEventListener('mouseleave', () => {
-            // reset to saved value
             const saved = parseInt(widget.dataset.saved || 0);
-            stars.forEach((s, i) => {
-                s.style.color = i < saved ? '#facc15' : '#d1d5db';
-            });
+            stars.forEach((s, i) => { s.style.color = i < saved ? '#facc15' : '#d1d5db'; });
         });
         star.addEventListener('click', () => {
             const val = idx + 1;
             widget.dataset.saved = val;
             fetch(`/rate_restaurant/${restaurantId}/`, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
+                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `stars=${val}`
             })
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'success') {
                     document.querySelector(`#avg-${restaurantId} .avg-val`).textContent = data.new_avg;
-                    stars.forEach((s, i) => {
-                        s.style.color = i < data.user_stars ? '#facc15' : '#d1d5db';
-                    });
-                    // Show toast
-                    showToast(`Rated ${data.user_stars}★ — thank you!`);
+                    stars.forEach((s, i) => { s.style.color = i < data.user_stars ? '#facc15' : '#d1d5db'; });
+                    showToast(`Rated ${data.user_stars} - thank you!`);
                 }
             });
         });
     });
-
-    // Set saved initial value from data-saved attribute
     const savedVal = parseInt(widget.dataset.saved || 0);
     stars.forEach((s, i) => {
-        if (i < savedVal) {
-            s.style.color = '#facc15';
-            s.className = s.className.replace('fa-regular','fa-solid');
-        }
+        if (i < savedVal) { s.style.color = '#facc15'; s.className = s.className.replace('fa-regular','fa-solid'); }
     });
 });
 
@@ -150,11 +247,9 @@ function showToast(msg) {
     t.textContent = msg;
     Object.assign(t.style, {
         position:'fixed', bottom:'24px', right:'24px',
-        background:'#111827', color:'white',
-        padding:'0.85rem 1.5rem', borderRadius:'10px',
-        boxShadow:'0 10px 30px rgba(0,0,0,0.2)',
-        zIndex:'999', fontSize:'0.95rem',
-        animation:'fadeInUp 0.3s ease'
+        background:'#111827', color:'white', padding:'0.85rem 1.5rem',
+        borderRadius:'10px', boxShadow:'0 10px 30px rgba(0,0,0,0.2)',
+        zIndex:'999', fontSize:'0.95rem', animation:'fadeInUp 0.3s ease'
     });
     document.body.appendChild(t);
     setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 2500);

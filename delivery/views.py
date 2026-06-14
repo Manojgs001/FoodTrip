@@ -569,6 +569,56 @@ def crave_detector(request):
     return render(request, 'delivery/crave_detector.html', {'username': username, 'response': response_text})
 
 
+# ── Inline AI Suggest (AJAX — called from home page search bar) ──────────────
+@login_required_customer
+def ai_suggest_inline(request):
+    """AJAX POST: returns AI food suggestion + list of matching restaurant names."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+
+    prompt  = request.POST.get('prompt', '').strip()
+    if not prompt:
+        return JsonResponse({'error': 'Empty prompt'}, status=400)
+
+    items        = Item.objects.select_related('restaurant').all()
+    menu_context = "Available Menu Items:\n"
+    for i in items:
+        menu_context += f"- {i.name} at {i.restaurant.name} (₹{i.price}): {i.description}\n"
+
+    system_instruction = (
+        "You are the 'Crave Detector' on FoodTrip. "
+        "Given the user's craving, recommend 1-2 specific dishes from the menu. "
+        "End your reply with a line: RESTAURANTS: <comma-separated restaurant names>. "
+        "Be fun, concise, max 2 sentences before the RESTAURANTS line."
+    )
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return JsonResponse({'error': 'API key not configured'}, status=500)
+
+    try:
+        client   = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=f"{menu_context}\n\nUser Craving: {prompt}",
+            config=genai.types.GenerateContentConfig(system_instruction=system_instruction)
+        )
+        text = response.text or ''
+
+        # Parse restaurant names from the RESTAURANTS: line
+        restaurants = []
+        if 'RESTAURANTS:' in text:
+            parts = text.split('RESTAURANTS:')
+            suggestion = parts[0].strip()
+            restaurants = [r.strip() for r in parts[1].split(',') if r.strip()]
+        else:
+            suggestion = text.strip()
+
+        return JsonResponse({'suggestion': suggestion, 'restaurants': restaurants})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 # ── Rating view ─────────────────────────────────────────────────────────────
 @login_required_customer
 def rate_restaurant(request, restaurant_id):

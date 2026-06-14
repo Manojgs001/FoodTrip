@@ -38,4 +38,5 @@ urlpatterns = [
     path('update_order_status/<int:order_id>', views.update_order_status, name='update_order_status'),
     path('rate_restaurant/<int:restaurant_id>/', views.rate_restaurant, name='rate_restaurant'),
     path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('ai_suggest/', views.ai_suggest_inline, name='ai_suggest_inline'),
 ]
