@@ -123,3 +123,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Razorpay Credentials
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_lT6VV3Hhr4ayCQ')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'YOUR_SECRET_KEY')
+
+# ── Session Persistence ──────────────────────────────────
+# Keep user logged in for 2 days (in seconds)
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 2       # 2 days
+# Don't log out when browser is closed
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+# Refresh the session timer on every request (keeps active users logged in)
+SESSION_SAVE_EVERY_REQUEST = True

@@ -23,7 +23,8 @@
     </p>
     
     <div style="margin-top: 2rem; text-align: center;">
-        <a href="/" class="btn btn-outline"><i class="fa-solid fa-home"></i> Back to Home</a>
+        <a href="{% url 'customer_home' %}" class="btn btn-outline"><i class="fa-solid fa-home"></i> Back to Home</a>
+        <a href="{% url 'order_history' %}" class="btn btn-primary" style="margin-top:0.5rem;"><i class="fa-solid fa-clock-rotate-left"></i> View My Orders</a>
     </div>
 </div>
 
@@ -46,7 +47,7 @@
 </div>
 <div class="auth-container" style="max-width: 600px; margin-top: -2rem; position: relative; text-align: center;">
     <p class="text-muted" style="margin-bottom: 2rem;">Order history tracking will be available soon!</p>
-    <a href="/" class="btn btn-outline"><i class="fa-solid fa-home"></i> Back to Home</a>
+    <a href="{% url 'customer_home' %}" class="btn btn-outline"><i class="fa-solid fa-home"></i> Back to Home</a>
 </div>
 {% endif %}
 
