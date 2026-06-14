@@ -72,9 +72,16 @@
         <div id="ai-response" style="display:none;margin-top:1rem;">
             <div style="background:white;border-radius:var(--radius-md);padding:1rem 1.25rem;
                         border-left:4px solid #7c3aed;box-shadow:0 2px 8px rgba(124,58,237,0.1);">
-                <div style="display:flex;gap:0.5rem;align-items:flex-start;">
+                <div style="display:flex;gap:0.5rem;align-items:flex-start;margin-bottom:0.75rem;">
                     <span style="font-size:1.5rem;">🤖</span>
                     <p id="ai-text" style="margin:0;line-height:1.7;color:var(--text-main);"></p>
+                </div>
+                <!-- Suggested Dish Cards -->
+                <div id="ai-dish-cards" style="display:none;margin-top:0.75rem;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">
+                        Add directly to your cart:
+                    </p>
+                    <div id="ai-dish-list" style="display:flex;gap:0.75rem;flex-wrap:wrap;"></div>
                 </div>
             </div>
         </div>
@@ -156,6 +163,8 @@ function askAI() {
     if (!prompt) return;
     document.getElementById('ai-loading').style.display = 'block';
     document.getElementById('ai-response').style.display = 'none';
+    document.getElementById('ai-dish-cards').style.display = 'none';
+    document.getElementById('ai-dish-list').innerHTML = '';
     document.getElementById('ai-submit-btn').disabled = true;
 
     fetch('/ai_suggest/', {
@@ -167,9 +176,38 @@ function askAI() {
     .then(data => {
         document.getElementById('ai-loading').style.display = 'none';
         document.getElementById('ai-submit-btn').disabled = false;
-        document.getElementById('ai-text').textContent = data.error ? 'Oops! ' + data.error : data.suggestion;
+
+        if (data.error) {
+            document.getElementById('ai-text').textContent = 'Oops! ' + data.error;
+        } else {
+            document.getElementById('ai-text').textContent = data.suggestion;
+            highlightRestaurants(data.restaurants || []);
+
+            // Render dish cards with Add to Cart buttons
+            const items = data.items || [];
+            if (items.length > 0) {
+                const list = document.getElementById('ai-dish-list');
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.style.cssText = 'background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:10px;padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;min-width:220px;max-width:300px;flex:1;';
+                    card.innerHTML = `
+                        <div style="flex:1;min-width:0;">
+                            <p style="margin:0;font-weight:700;color:#4c1d95;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</p>
+                            <p style="margin:0;font-size:0.8rem;color:#6d28d9;">${item.restaurant}</p>
+                            <p style="margin:0;font-weight:800;color:#7c3aed;font-size:1rem;">Rs.${item.price}</p>
+                        </div>
+                        <button onclick="addToCartAI(event,'${item.add_url}',this)"
+                            style="background:#7c3aed;color:white;border:none;border-radius:8px;
+                                   padding:0.5rem 0.85rem;font-weight:700;cursor:pointer;
+                                   font-size:0.85rem;white-space:nowrap;transition:all 0.2s ease;flex-shrink:0;">
+                            + Add
+                        </button>`;
+                    list.appendChild(card);
+                });
+                document.getElementById('ai-dish-cards').style.display = 'block';
+            }
+        }
         document.getElementById('ai-response').style.display = 'block';
-        if (!data.error) highlightRestaurants(data.restaurants || []);
     })
     .catch(() => {
         document.getElementById('ai-loading').style.display = 'none';
@@ -177,6 +215,38 @@ function askAI() {
         document.getElementById('ai-text').textContent = 'Something went wrong. Please try again.';
         document.getElementById('ai-response').style.display = 'block';
     });
+}
+
+function addToCartAI(event, url, btn) {
+    event.preventDefault();
+    btn.disabled = true;
+    btn.textContent = '...';
+    fetch(url, {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            btn.textContent = 'Added!';
+            btn.style.background = '#059669';
+            // Update cart badge in navbar
+            const badge = document.querySelector('.cart-badge');
+            if (badge) { badge.textContent = data.cart_count; }
+            else {
+                const cartLink = document.querySelector('a[href*="cart"]');
+                if (cartLink) {
+                    const b = document.createElement('span');
+                    b.className = 'cart-badge';
+                    b.textContent = data.cart_count;
+                    cartLink.style.position = 'relative';
+                    cartLink.appendChild(b);
+                }
+            }
+            showToast(btn.closest('div').querySelector('p').textContent + ' added to cart!');
+        }
+    })
+    .catch(() => { btn.textContent = 'Error'; btn.disabled = false; });
 }
 
 function highlightRestaurants(names) {

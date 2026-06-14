@@ -572,24 +572,25 @@ def crave_detector(request):
 # ── Inline AI Suggest (AJAX — called from home page search bar) ──────────────
 @login_required_customer
 def ai_suggest_inline(request):
-    """AJAX POST: returns AI food suggestion + list of matching restaurant names."""
+    """AJAX POST: returns AI suggestion + matched dish items for Add to Cart."""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
 
-    prompt  = request.POST.get('prompt', '').strip()
+    prompt = request.POST.get('prompt', '').strip()
     if not prompt:
         return JsonResponse({'error': 'Empty prompt'}, status=400)
 
-    items        = Item.objects.select_related('restaurant').all()
+    all_items    = Item.objects.select_related('restaurant').all()
     menu_context = "Available Menu Items:\n"
-    for i in items:
-        menu_context += f"- {i.name} at {i.restaurant.name} (₹{i.price}): {i.description}\n"
+    for i in all_items:
+        menu_context += f"- {i.name} at {i.restaurant.name} (Rs.{i.price}): {i.description}\n"
 
     system_instruction = (
         "You are the 'Crave Detector' on FoodTrip. "
         "Given the user's craving, recommend 1-2 specific dishes from the menu. "
-        "End your reply with a line: RESTAURANTS: <comma-separated restaurant names>. "
-        "Be fun, concise, max 2 sentences before the RESTAURANTS line."
+        "Be fun and concise (max 2 sentences). "
+        "Then on a new line write: DISHES: <exact dish name 1>, <exact dish name 2> "
+        "Then on a new line write: RESTAURANTS: <restaurant name 1>, <restaurant name 2>"
     )
 
     api_key = os.getenv("GEMINI_API_KEY")
@@ -605,16 +606,48 @@ def ai_suggest_inline(request):
         )
         text = response.text or ''
 
-        # Parse restaurant names from the RESTAURANTS: line
-        restaurants = []
-        if 'RESTAURANTS:' in text:
-            parts = text.split('RESTAURANTS:')
-            suggestion = parts[0].strip()
-            restaurants = [r.strip() for r in parts[1].split(',') if r.strip()]
-        else:
-            suggestion = text.strip()
+        # Parse suggestion, dish names, restaurant names
+        suggestion    = text
+        dish_names    = []
+        rest_names    = []
 
-        return JsonResponse({'suggestion': suggestion, 'restaurants': restaurants})
+        if 'DISHES:' in text:
+            parts      = text.split('DISHES:')
+            suggestion = parts[0].strip()
+            remainder  = parts[1]
+            if 'RESTAURANTS:' in remainder:
+                dish_part, rest_part = remainder.split('RESTAURANTS:', 1)
+                dish_names = [d.strip() for d in dish_part.split(',') if d.strip()]
+                rest_names = [r.strip() for r in rest_part.split(',') if r.strip()]
+            else:
+                dish_names = [d.strip() for d in remainder.split(',') if d.strip()]
+        elif 'RESTAURANTS:' in text:
+            parts      = text.split('RESTAURANTS:')
+            suggestion = parts[0].strip()
+            rest_names = [r.strip() for r in parts[1].split(',') if r.strip()]
+
+        # Match dish names to real DB items (fuzzy case-insensitive)
+        matched_items = []
+        for dish in dish_names:
+            dish_lower = dish.lower()
+            for item in all_items:
+                if dish_lower in item.name.lower() or item.name.lower() in dish_lower:
+                    matched_items.append({
+                        'id':         item.id,
+                        'name':       item.name,
+                        'price':      str(item.price),
+                        'restaurant': item.restaurant.name,
+                        'picture':    item.get_picture_url() if hasattr(item, 'get_picture_url') else '',
+                        'add_url':    f'/add_to_cart/{item.id}',
+                        'menu_url':   f'/menu/{item.restaurant.id}/',
+                    })
+                    break   # one match per dish name
+
+        return JsonResponse({
+            'suggestion':  suggestion,
+            'restaurants': rest_names,
+            'items':       matched_items,
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
